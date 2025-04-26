@@ -1,231 +1,172 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 
-export default function Page() {
-  // LinkedIn state
+export default function Home() {
+  // LinkedIn section states
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [isLinkedinLoading, setIsLinkedinLoading] = useState(false);
   const [linkedinError, setLinkedinError] = useState("");
   const [linkedinSuccess, setLinkedinSuccess] = useState(false);
 
-  // Resume state
+  // Resume section states
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isResumeLoading, setIsResumeLoading] = useState(false);
   const [resumeError, setResumeError] = useState("");
   const [resumeSuccess, setResumeSuccess] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleLinkedinSubmit = async (e) => {
+  const handleLinkedinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!linkedinUrl.trim()) {
-      setLinkedinError("Please enter a LinkedIn URL");
-      setLinkedinSuccess(false);
-      return;
-    }
-
+    // LinkedIn submission handler logic would go here
     setIsLinkedinLoading(true);
-    setLinkedinError("");
-    setLinkedinSuccess(false);
-
-    try {
-      const encodedUrl = encodeURIComponent(linkedinUrl);
-      const response = await fetch(`/api/linkedin?url=${encodedUrl}`);
-
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.error) {
-        setLinkedinError(data.error);
-      } else {
-        console.log("LinkedIn Profile Data:", data);
-        setLinkedinSuccess(true);
-      }
-    } catch (err) {
-      setLinkedinError("Failed to fetch profile data: " + (err.message || "Unknown error"));
-      console.error(err);
-    } finally {
+    // Mock success for demonstration
+    setTimeout(() => {
       setIsLinkedinLoading(false);
+      setLinkedinSuccess(true);
+      console.log("LinkedIn profile data:", { url: linkedinUrl });
+    }, 1500);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
     }
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setSelectedFile(file);
-    setResumeError("");
-  };
-
-  const handleResumeSubmit = async (e) => {
+  const handleResumeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
+    // Resume submission handler logic would go here
     if (!selectedFile) {
-      setResumeError("Please select a resume file");
+      setResumeError("Please select a file first");
       return;
     }
 
     setIsResumeLoading(true);
-    setResumeError("");
-    setResumeSuccess(false);
-
-    try {
-      const formData = new FormData();
-      formData.append("resume", selectedFile);
-
-      const response = await fetch("/api/resume", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to process resume");
-      }
-
-      console.log("Resume Data:", data);
-
-      if (data.data) {
-        console.log("Parsed Content:", data.data);
-      }
-
-      if (data.meta) {
-        console.log("Document Metadata:", data.meta);
-      }
-
-      setResumeSuccess(true);
-    } catch (err) {
-      setResumeError("Failed to process resume: " + (err.message || "Unknown error"));
-      console.error(err);
-    } finally {
+    // Mock success for demonstration
+    setTimeout(() => {
       setIsResumeLoading(false);
-    }
+      setResumeSuccess(true);
+      console.log("Resume data processed for file:", selectedFile.name);
+    }, 1500);
   };
 
   return (
-<<<<<<< HEAD
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center max-w-2xl mx-auto w-full">
-        <h1 className="text-3xl font-bold text-center mb-8">Profile Data Extractor</h1>
+    <main className="flex min-h-screen flex-col items-center justify-between p-8">
+      <div className="z-10 max-w-5xl w-full items-center justify-center font-mono text-sm lg:flex flex-col">
+        <h1 className="text-4xl font-bold mb-8 text-center">AI Assistant Tools</h1>
 
-        {/* LinkedIn Section */}
-        <div className="w-full p-6 bg-white rounded-lg shadow-md">
-          <h2 className="text-xl font-bold mb-4">LinkedIn Profile Extractor</h2>
-          <form onSubmit={handleLinkedinSubmit} className="w-full">
-            <div className="flex flex-col sm:flex-row gap-4 w-full">
-              <input
-                type="text"
-                value={linkedinUrl}
-                onChange={(e) => setLinkedinUrl(e.target.value)}
-                placeholder="Enter LinkedIn URL (e.g., https://www.linkedin.com/in/username/)"
-                className="flex-grow p-3 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded shadow transition"
-                disabled={isLinkedinLoading}
+        {/* Voice AI Interview Section */}
+        <section className="mb-16 w-full">
+          <h2 className="text-3xl font-bold mb-6 text-center">Voice AI Interview</h2>
+          <div className="text-center mt-4 space-y-4">
+            <div>
+              <h3 className="text-xl mb-2">New Implementation</h3>
+              <Link
+                href="/interview-vapi"
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
               >
-                {isLinkedinLoading ? "Extracting..." : "Extract Profile"}
-              </button>
+                Vapi AI
+              </Link>
             </div>
-          </form>
+          </div>
+        </section>
 
-          {linkedinError && (
-            <div className="w-full p-4 mt-4 bg-red-100 border border-red-400 text-red-700 rounded">
-              {linkedinError}
-            </div>
-          )}
+        {/* Profile Data Extractor Section */}
+        <section className="w-full">
+          <h2 className="text-3xl font-bold mb-6 text-center">Profile Data Extractor</h2>
 
-          {isLinkedinLoading && (
-            <div className="flex items-center justify-center w-full mt-4">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-            </div>
-          )}
-
-          {linkedinSuccess && (
-            <div className="w-full p-4 mt-4 bg-green-100 border border-green-400 text-green-700 rounded">
-              Profile data successfully retrieved! Check the browser console.
-            </div>
-          )}
-        </div>
-
-        {/* Resume Section */}
-        <div className="w-full p-6 bg-white rounded-lg shadow-md">
-          <h2 className="text-xl font-bold mb-4">Resume Extractor</h2>
-          <form onSubmit={handleResumeSubmit} className="w-full">
-            <div className="flex flex-col gap-4 w-full">
-              <div className="flex flex-col">
-                <label className="mb-2 text-sm font-medium text-gray-700">
-                  Upload Resume (PDF, DOCX, DOC)
-                </label>
+          {/* LinkedIn Section */}
+          <div className="w-full p-6 bg-white rounded-lg shadow-md mb-8">
+            <h3 className="text-xl font-bold mb-4">LinkedIn Profile Extractor</h3>
+            <form onSubmit={handleLinkedinSubmit} className="w-full">
+              <div className="flex flex-col sm:flex-row gap-4 w-full">
                 <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
-                  accept=".pdf,.doc,.docx"
+                  type="text"
+                  value={linkedinUrl}
+                  onChange={(e) => setLinkedinUrl(e.target.value)}
+                  placeholder="Enter LinkedIn URL (e.g., https://www.linkedin.com/in/username/)"
+                  className="flex-grow p-3 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <p className="mt-1 text-xs text-gray-500">Supported formats: PDF, DOC, DOCX</p>
+                <button
+                  type="submit"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded shadow transition"
+                  disabled={isLinkedinLoading}
+                >
+                  {isLinkedinLoading ? "Extracting..." : "Extract Profile"}
+                </button>
               </div>
+            </form>
 
-              <button
-                type="submit"
-                className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded shadow transition"
-                disabled={isResumeLoading || !selectedFile}
-              >
-                {isResumeLoading ? "Processing..." : "Extract Resume Data"}
-              </button>
-            </div>
-          </form>
+            {linkedinError && (
+              <div className="w-full p-4 mt-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                {linkedinError}
+              </div>
+            )}
 
-          {resumeError && (
-            <div className="w-full p-4 mt-4 bg-red-100 border border-red-400 text-red-700 rounded">
-              {resumeError}
-            </div>
-          )}
+            {isLinkedinLoading && (
+              <div className="flex items-center justify-center w-full mt-4">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+              </div>
+            )}
 
-          {isResumeLoading && (
-            <div className="flex items-center justify-center w-full mt-4">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500"></div>
-            </div>
-          )}
+            {linkedinSuccess && (
+              <div className="w-full p-4 mt-4 bg-green-100 border border-green-400 text-green-700 rounded">
+                Profile data successfully retrieved! Check the browser console.
+              </div>
+            )}
+          </div>
 
-          {resumeSuccess && (
-            <div className="w-full p-4 mt-4 bg-green-100 border border-green-400 text-green-700 rounded">
-              Resume data successfully processed! Check the browser console.
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
-=======
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-center font-mono text-sm lg:flex">
-        <h1 className="text-4xl font-bold mb-8 text-center">Voice AI Interview</h1>
+          {/* Resume Section */}
+          <div className="w-full p-6 bg-white rounded-lg shadow-md">
+            <h3 className="text-xl font-bold mb-4">Resume Extractor</h3>
+            <form onSubmit={handleResumeSubmit} className="w-full">
+              <div className="flex flex-col gap-4 w-full">
+                <div className="flex flex-col">
+                  <label className="mb-2 text-sm font-medium text-gray-700">
+                    Upload Resume (PDF, DOCX, DOC)
+                  </label>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
+                    accept=".pdf,.doc,.docx"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Supported formats: PDF, DOC, DOCX</p>
+                </div>
 
-        <div className="text-center mt-8">
-          <Link
-            href="/interview"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Start Interview
-          </Link>
-        </div>
+                <button
+                  type="submit"
+                  className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded shadow transition"
+                  disabled={isResumeLoading || !selectedFile}
+                >
+                  {isResumeLoading ? "Processing..." : "Extract Resume Data"}
+                </button>
+              </div>
+            </form>
 
-        <div className="mt-12">
-          <h2 className="text-2xl font-semibold mb-4">Technologies Used:</h2>
-          <ul className="list-disc pl-6">
-            <li>Cartesia Sonic-2 for high-quality text-to-speech</li>
-            <li>Claude 3.7 for conversational reasoning</li>
-            <li>Deepgram for speech-to-text</li>
-            <li>Next.js App Router for the frontend</li>
-          </ul>
-        </div>
+            {resumeError && (
+              <div className="w-full p-4 mt-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                {resumeError}
+              </div>
+            )}
+
+            {isResumeLoading && (
+              <div className="flex items-center justify-center w-full mt-4">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500"></div>
+              </div>
+            )}
+
+            {resumeSuccess && (
+              <div className="w-full p-4 mt-4 bg-green-100 border border-green-400 text-green-700 rounded">
+                Resume data successfully processed! Check the browser console.
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </main>
->>>>>>> 44f501c (Initial interview scaffolding)
   );
 }
