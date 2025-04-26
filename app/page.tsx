@@ -17,16 +17,36 @@ export default function Home() {
   const [resumeSuccess, setResumeSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleLinkedinSubmit = (e: React.FormEvent) => {
+  const handleLinkedinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // LinkedIn submission handler logic would go here
+
+    // Input validation
+    if (!linkedinUrl.trim() || !linkedinUrl.includes("linkedin.com/")) {
+      setLinkedinError("Please enter a valid LinkedIn URL");
+      return;
+    }
+
     setIsLinkedinLoading(true);
-    // Mock success for demonstration
-    setTimeout(() => {
-      setIsLinkedinLoading(false);
+    setLinkedinError("");
+    setLinkedinSuccess(false);
+
+    try {
+      // Call the existing LinkedIn extraction API route
+      const response = await fetch(`/api/linkedin?url=${encodeURIComponent(linkedinUrl)}`);
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || data.message || "Failed to extract profile data");
+      }
+
+      console.log("LinkedIn profile data:", data);
       setLinkedinSuccess(true);
-      console.log("LinkedIn profile data:", { url: linkedinUrl });
-    }, 1500);
+    } catch (error) {
+      console.error("LinkedIn extraction error:", error);
+      setLinkedinError(error instanceof Error ? error.message : "An unknown error occurred");
+    } finally {
+      setIsLinkedinLoading(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +101,7 @@ export default function Home() {
           <div className="w-full p-6 bg-white rounded-lg shadow-md mb-8">
             <h3 className="text-xl font-bold text-black mb-4">LinkedIn Profile Extractor</h3>\
             <form onSubmit={handleLinkedinSubmit} className="w-full">
-              <div className="flex flex-col sm:flex-row gap-4 w-full">
+              <div className="flex flex-col sm:flex-row gap-4 w-full text-black">
                 <input
                   type="text"
                   value={linkedinUrl}
