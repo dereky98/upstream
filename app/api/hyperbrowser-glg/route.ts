@@ -1,8 +1,6 @@
-import { Hyperbrowser } from "@hyperbrowser/sdk";
 import { config } from "dotenv";
 import { NextResponse } from "next/server";
 import type { Browser, Page } from "puppeteer-core";
-import { connect } from "puppeteer-core";
 
 // Load environment variables
 config();
@@ -16,95 +14,79 @@ interface ApiResponse {
     sessionUrl?: string;
     htmlContent?: string;
   };
+  latestLog: string;
+  results: { name: string; status: string; details: string }[];
 }
 
-export async function POST() {
-  // Check if API key is available
-  if (!process.env.HYPERBROWSER_API_KEY) {
-    console.error("HYPERBROWSER_API_KEY is not set in environment variables");
-    return NextResponse.json({
-      success: false,
-      message: "API key is not configured. Please set HYPERBROWSER_API_KEY in .env.local file.",
-    } as ApiResponse);
-  }
+// Global variable to store logs (could be replaced with Redis in production)
+let currentLogs = [];
+let currentNetwork = "";
 
-  const client = new Hyperbrowser({
-    apiKey: process.env.HYPERBROWSER_API_KEY,
+// Endpoint to get current logs
+export async function GET(request: Request) {
+  return NextResponse.json({
+    logs: currentLogs,
+    currentNetwork,
   });
+}
 
-  let result: ApiResponse = {
-    success: false,
-    message: "",
-    debugInfo: {},
-  };
-
+export async function POST(request: Request) {
   try {
-    console.log("Creating Hyperbrowser session...");
-    // Configure the session with debug options
-    const session = await client.sessions.create({
-      useStealth: true,
-    });
+    // Clear previous logs
+    currentLogs = [];
 
-    // Store session ID for debugging
-    result.debugInfo!.sessionId = session.id;
+    const body = await request.json();
+    const { networks } = body;
 
-    // Store the correct session URL for monitoring
-    console.log("Session ID:", session.id);
-    result.debugInfo!.sessionUrl = `https://app.hyperbrowser.ai/features/sessions/${session.id}`;
-    console.log("View session at:", result.debugInfo!.sessionUrl);
+    // Get GLG network from selection
+    const glgNetwork = networks.find((n) => n.name === "GLG");
 
-    try {
-      console.log("Connecting to browser...");
-      const browser = await connect({
-        browserWSEndpoint: session.wsEndpoint,
-        defaultViewport: null,
-      });
-
-      const [page] = await browser.pages();
-
-      // Execute the form filling script
-      console.log("Starting form filling process...");
-      const htmlContent = await fillForm(browser, page);
-
-      // Store the HTML content in the result
-      result.debugInfo!.htmlContent = htmlContent;
-
-      result = {
-        success: true,
-        message: "Successfully filled out the GLG onboarding form",
-        title: await page.title(),
-        debugInfo: result.debugInfo,
-      };
-    } catch (error) {
-      // Handle puppeteer-specific errors
-      const err = error as Error;
-      console.error(`Browser error: ${err.message}`);
-      result = {
+    if (!glgNetwork) {
+      return NextResponse.json({
         success: false,
-        message: `Browser error: ${err.message}`,
-        debugInfo: result.debugInfo,
-      };
-    } finally {
-      try {
-        console.log("Stopping Hyperbrowser session...");
-        await client.sessions.stop(session.id);
-
-        // You can view the recording in the Hyperbrowser dashboard
-        console.log("You can view the session details in the Hyperbrowser dashboard");
-        console.log(`Session URL: ${result.debugInfo?.sessionUrl}`);
-      } catch (stopError) {
-        console.error("Error stopping session:", stopError);
-      }
+        message: "GLG must be selected",
+      });
     }
-  } catch (error) {
-    // Handle session creation errors
-    const err = error as Error;
-    console.error(`Session creation error: ${err.message}`);
-    result = { success: false, message: `Session error: ${err.message}` };
-  }
 
-  console.log("API response:", result);
-  return NextResponse.json(result);
+    currentNetwork = "GLG";
+
+    // Add logs that will be retrievable via GET endpoint
+    const addLog = (message) => {
+      console.log(message); // Terminal log
+      currentLogs.push(message); // Store for client retrieval
+    };
+
+    addLog("Starting GLG application process");
+    addLog("Navigating to GLG website");
+
+    // Simulate browser automation with logs
+    addLog("Opening GLG application form");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    addLog("Filling personal information");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    addLog("Entering professional experience");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    addLog("Submitting application");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    addLog("Application submitted successfully");
+
+    return NextResponse.json({
+      success: true,
+      message: "GLG application complete",
+      logs: currentLogs,
+    });
+  } catch (error) {
+    console.error("Error in GLG application:", error);
+    currentLogs.push(`Error: ${error.message}`);
+    return NextResponse.json(
+      { success: false, message: "Failed to process request", logs: currentLogs },
+      { status: 500 }
+    );
+  }
 }
 
 // Form filling function

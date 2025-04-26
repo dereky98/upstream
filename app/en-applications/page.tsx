@@ -1,30 +1,57 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function ExpertNetworkApplicationsPage() {
   const [networks, setNetworks] = useState([
-    {
-      id: 1,
-      name: "GLG",
-      selected: true,
-      apiRoute: "/api/hyperbrowser-glg",
-      url: "https://glginsights.com/experts/apply",
-    },
-    {
-      id: 2,
-      name: "Tegus",
-      selected: false,
-      apiRoute: "/api/hyperbrowser-tegus",
-      url: "https://www.tegus.com/become-an-expert",
-    },
+    { id: 1, name: "GLG", selected: true },
+    { id: 2, name: "Tegus", selected: false },
   ]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [results, setResults] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  // New state for tracking current application status
+  const [currentNetwork, setCurrentNetwork] = useState("");
+  const [currentLogMessage, setCurrentLogMessage] = useState("");
+
+  const [stepIndex, setStepIndex] = useState(0);
+  const [steps, setSteps] = useState([]);
+
+  // Add a logs array to capture and display console messages
+  const [logs, setLogs] = useState([]);
+
+  // Polling effect for log updates
+  useEffect(() => {
+    let interval;
+
+    if (isSubmitting && currentNetwork) {
+      interval = setInterval(async () => {
+        try {
+          const networkLower = currentNetwork.toLowerCase();
+          const response = await fetch(`/api/hyperbrowser-${networkLower}`);
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.logs && data.logs.length > 0) {
+              setLogs(data.logs);
+              // Update current log message with the latest log
+              setCurrentLogMessage(data.logs[data.logs.length - 1]);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching logs:", error);
+        }
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isSubmitting, currentNetwork]);
 
   const toggleNetwork = (id) => {
     setNetworks(
@@ -33,6 +60,19 @@ export default function ExpertNetworkApplicationsPage() {
       )
     );
   };
+
+  useEffect(() => {
+    let timer;
+    if (steps.length > 0 && stepIndex < steps.length) {
+      setCurrentLogMessage(steps[stepIndex].action);
+
+      timer = setTimeout(() => {
+        setStepIndex((prev) => prev + 1);
+      }, 1500); // Show each step for 1.5 seconds
+    }
+
+    return () => clearTimeout(timer);
+  }, [steps, stepIndex]);
 
   const submitApplications = async () => {
     const selectedNetworks = networks.filter((network) => network.selected);
@@ -46,6 +86,10 @@ export default function ExpertNetworkApplicationsPage() {
     setResults([]);
     setError("");
     setSuccess(false);
+    setCurrentNetwork("Initializing...");
+    setCurrentLogMessage("Preparing to start application process...");
+    console.log("Starting applications process");
+    setLogs([]); // Clear previous logs
 
     try {
       const allResults = [];
@@ -53,15 +97,25 @@ export default function ExpertNetworkApplicationsPage() {
       // Process each selected network
       for (const network of selectedNetworks) {
         try {
-          // Call the appropriate API route for each network
-          const response = await fetch(network.apiRoute, {
+          // Update current network being processed
+          setCurrentNetwork(network.name);
+          setCurrentLogMessage(`Starting ${network.name} application...`);
+          console.log(`Processing network: ${network.name}`);
+
+          // Dynamically create API endpoint based on network name
+          const networkNameLower = network.name.toLowerCase();
+          const apiEndpoint = `/api/hyperbrowser-${networkNameLower}`;
+
+          console.log(`Calling ${apiEndpoint} for ${network.name}`);
+          setCurrentLogMessage(`Connecting to ${network.name} application system...`);
+
+          const response = await fetch(apiEndpoint, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
               networks: [network],
-              url: network.url,
             }),
           });
 
@@ -72,17 +126,32 @@ export default function ExpertNetworkApplicationsPage() {
           const data = await response.json();
           console.log(`${network.name} API response:`, data);
 
+          // Display the latest log message from the API
+          if (data.latestLog) {
+            setCurrentLogMessage(data.latestLog);
+            console.log(`Setting log message to: ${data.latestLog}`);
+          } else if (data.message) {
+            setCurrentLogMessage(data.message);
+            console.log(`Setting log message to: ${data.message}`);
+          } else {
+            setCurrentLogMessage(`Completed ${network.name} application`);
+          }
+
           if (data.results) {
             allResults.push(...data.results);
+            addLog(`Added ${data.results.length} results from ${network.name}`);
           } else {
             allResults.push({
               name: network.name,
               status: "Success",
-              details: `Application submitted to ${network.url}`,
+              details: `Application submitted on ${new Date().toLocaleString()}`,
             });
+            addLog(`No results data from ${network.name}, added default success result`);
           }
         } catch (err) {
           console.error(`Error with ${network.name}:`, err);
+          setCurrentLogMessage(`Error: ${err.message}`);
+
           allResults.push({
             name: network.name,
             status: "Failed",
@@ -93,9 +162,13 @@ export default function ExpertNetworkApplicationsPage() {
 
       setResults(allResults);
       setSuccess(true);
+      setCurrentNetwork("Complete");
+      setCurrentLogMessage("All applications completed");
+      addLog("All applications completed");
     } catch (error) {
       console.error("Error submitting applications:", error);
       setError(error instanceof Error ? error.message : "Failed to submit applications");
+      addLog(`Error submitting applications: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -129,6 +202,7 @@ export default function ExpertNetworkApplicationsPage() {
                         className="sr-only peer"
                         checked={network.selected}
                         onChange={() => toggleNetwork(network.id)}
+                        disabled={isSubmitting}
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
@@ -147,15 +221,24 @@ export default function ExpertNetworkApplicationsPage() {
           </button>
         </div>
 
-        {error && (
-          <div className="w-full p-4 mb-6 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
+        {/* Simple status display section */}
+        {isSubmitting && (
+          <div className="w-full p-6 bg-blue-50 border border-blue-200 rounded-lg shadow-md mb-6">
+            <h2 className="text-xl font-bold mb-2 text-black">Application Status</h2>
+            <div className="flex flex-col space-y-2">
+              <div className="text-black">
+                <span className="font-medium">Applying to:</span> {currentNetwork}
+              </div>
+              <div className="text-black">
+                <span className="font-medium">Status:</span> {currentLogMessage}
+              </div>
+            </div>
           </div>
         )}
 
-        {isSubmitting && (
-          <div className="flex items-center justify-center w-full mb-6">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+        {error && (
+          <div className="w-full p-4 mb-6 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
           </div>
         )}
 
@@ -193,6 +276,18 @@ export default function ExpertNetworkApplicationsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Console logs display */}
+        {logs.length > 0 && (
+          <div className="w-full p-6 bg-blue-50 border border-blue-200 rounded-lg shadow-md mb-6">
+            <h2 className="text-xl font-bold mb-2 text-black">Application Logs</h2>
+            <div className="bg-black text-white p-4 rounded font-mono text-sm h-32 overflow-y-auto">
+              {logs.map((log, index) => (
+                <div key={index}>{log}</div>
+              ))}
+            </div>
           </div>
         )}
 

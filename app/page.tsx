@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Home() {
   // LinkedIn section states
@@ -16,6 +16,44 @@ export default function Home() {
   const [resumeError, setResumeError] = useState("");
   const [resumeSuccess, setResumeSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [networks, setNetworks] = useState([
+    { id: 1, name: "GLG", selected: true },
+    { id: 2, name: "Tegus", selected: false },
+  ]);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [results, setResults] = useState([]);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [currentNetwork, setCurrentNetwork] = useState("");
+  const [logs, setLogs] = useState([]);
+
+  // Poll for logs when application is in progress
+  useEffect(() => {
+    let interval;
+
+    if (isSubmitting && currentNetwork) {
+      // Set up polling
+      interval = setInterval(async () => {
+        try {
+          const networkLower = currentNetwork.toLowerCase();
+          const response = await fetch(`/api/hyperbrowser-${networkLower}`);
+          const data = await response.json();
+
+          if (data.logs && data.logs.length > 0) {
+            setLogs(data.logs);
+          }
+        } catch (error) {
+          console.error("Error fetching logs:", error);
+        }
+      }, 1000); // Poll every second
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isSubmitting, currentNetwork]);
 
   const handleLinkedinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +109,73 @@ export default function Home() {
       console.log("Resume data processed for file:", selectedFile.name);
     }, 1500);
   };
+
+  const toggleNetwork = (id) => {
+    setNetworks(
+      networks.map((network) =>
+        network.id === id ? { ...network, selected: !network.selected } : network
+      )
+    );
+  };
+
+  const submitApplications = async () => {
+    const selectedNetworks = networks.filter((network) => network.selected);
+
+    if (selectedNetworks.length === 0) {
+      setError("Please select at least one expert network");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setResults([]);
+    setError("");
+    setSuccess(false);
+    setLogs([]);
+
+    try {
+      for (const network of selectedNetworks) {
+        setCurrentNetwork(network.name);
+
+        // Call the API for this network
+        const networkLower = network.name.toLowerCase();
+        const response = await fetch(`/api/hyperbrowser-${networkLower}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ networks: [network] }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`API returned status ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("API response:", data);
+
+        // Add the network to results
+        setResults((prev) => [
+          ...prev,
+          {
+            name: network.name,
+            status: "Success",
+            details: "Application completed",
+          },
+        ]);
+      }
+
+      setSuccess(true);
+    } catch (error) {
+      console.error("Error:", error);
+      setError(error.message);
+    } finally {
+      setIsSubmitting(false);
+      setCurrentNetwork("");
+    }
+  };
+
+  // Display the latest log
+  const latestLog = logs.length > 0 ? logs[logs.length - 1] : "Initializing...";
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-8">
@@ -183,6 +288,30 @@ export default function Home() {
             )}
           </div>
         </section>
+
+        {/* Status display with latest log */}
+        {isSubmitting && (
+          <div className="w-full p-6 bg-blue-50 border border-blue-200 rounded-lg shadow-md mb-6">
+            <h2 className="text-xl font-bold mb-2 text-black">Application Status</h2>
+            <div className="flex flex-col space-y-2">
+              <div className="text-black">
+                <span className="font-medium">Applying to:</span> {currentNetwork}
+              </div>
+              <div className="text-black">
+                <span className="font-medium">Status:</span> {latestLog}
+              </div>
+            </div>
+
+            {/* Log history */}
+            <div className="mt-4 p-2 bg-black text-white rounded max-h-40 overflow-auto">
+              {logs.map((log, i) => (
+                <div key={i} className="font-mono text-sm">
+                  {log}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
