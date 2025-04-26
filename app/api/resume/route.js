@@ -1,21 +1,14 @@
-import { AffindaAPI, AffindaCredential } from "@affinda/affinda";
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
   console.log("Resume API route hit!");
 
   try {
-    // Check if API key is configured
     if (!process.env.AFFINDA_API_KEY) {
       console.error("Missing AFFINDA_API_KEY in environment variables");
       return NextResponse.json({ error: "Affinda API key not configured" }, { status: 500 });
     }
 
-    // Create Affinda client with API key
-    const credential = new AffindaCredential(process.env.AFFINDA_API_KEY);
-    const client = new AffindaAPI(credential);
-
-    // Get the uploaded file from the request
     const formData = await request.formData();
     const file = formData.get("resume");
 
@@ -26,71 +19,154 @@ export async function POST(request) {
 
     console.log("File received:", file.name, file.type, file.size);
 
-    // Convert the file to an array buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    try {
+      console.log("Uploading resume to Affinda API directly");
 
-    // Create document with proper workspace
-    const workspaceId = "AkEArPht"; // Your workspace ID
+      // Create form data for the API request
+      const formDataForAffinda = new FormData();
+      formDataForAffinda.append("file", file);
+      formDataForAffinda.append("wait", "true");
 
-    console.log("Creating document with Affinda client");
-    const documentResponse = await client.createDocument({
-      file: buffer,
-      fileName: file.name,
-      workspace: workspaceId,
-      wait: "true", // Wait for processing to complete
-    });
+      // Make the request to the Affinda API using v2 endpoint
+      const response = await fetch("https://api.affinda.com/v2/resumes", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.AFFINDA_API_KEY}`,
+        },
+        body: formDataForAffinda,
+      });
 
-    // Log the full response structure to find the correct identifier
-    console.log("Document upload response:", JSON.stringify(documentResponse, null, 2));
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Upload failed with status ${response.status}: ${errorText}`);
+        return NextResponse.json(
+          {
+            error: "Failed to upload resume to Affinda",
+            status: response.status,
+            details: errorText,
+          },
+          { status: response.status }
+        );
+      }
 
-    // Check possible locations for the identifier
-    const documentId =
-      documentResponse.identifier ||
-      documentResponse.id ||
-      documentResponse.meta?.identifier ||
-      documentResponse.documentId;
+      // Parse the response
+      const result = await response.json();
 
-    if (!documentId) {
-      console.error("Could not find document identifier in response");
+      // Detailed console logging
+      console.log("====== FULL RESUME RESPONSE PAYLOAD ======");
+      console.log(JSON.stringify(result, null, 2));
+      console.log("======= DOCUMENT ID =======");
+      console.log(result.identifier || result.meta?.identifier);
+      console.log("======= PERSONAL INFO =======");
+      console.log(JSON.stringify(result.data?.name, null, 2));
+      console.log(JSON.stringify(result.data?.emails, null, 2));
+      console.log(JSON.stringify(result.data?.phoneNumbers, null, 2));
+      console.log("======= WORK EXPERIENCE =======");
+      console.log(JSON.stringify(result.data?.workExperience, null, 2));
+      console.log("======= EDUCATION =======");
+      console.log(JSON.stringify(result.data?.education, null, 2));
+      console.log("======= SKILLS =======");
+      console.log(JSON.stringify(result.data?.skills, null, 2));
+      console.log("====== END RESUME PAYLOAD ======");
+
+      // Extract document ID
+      const documentId = result.identifier || result.meta?.identifier;
+
+      if (!documentId) {
+        return NextResponse.json(
+          {
+            error: "Resume uploaded but no identifier returned",
+            result,
+          },
+          { status: 500 }
+        );
+      }
+
+      console.log(`Resume uploaded successfully with ID: ${documentId}`);
+
+      // Check if we have any parsed data
+      if (!result.data || Object.keys(result.data).length === 0) {
+        console.log("No parsed data available in the response");
+        return NextResponse.json({
+          message: "Resume was uploaded but no parsed data available",
+          documentId,
+          rawResponse: result,
+        });
+      }
+
+      // Structured extraction
+      const parsed = result.data;
+
+      const structuredData = {
+        personal: {
+          name: {
+            first: parsed?.name?.first || null,
+            middle: parsed?.name?.middle || null,
+            last: parsed?.name?.last || null,
+            raw: parsed?.name?.raw || null,
+          },
+          emails: parsed?.emails || [],
+          phoneNumbers: parsed?.phoneNumbers || [],
+          location: parsed?.location || {},
+          websites: parsed?.websites || [],
+        },
+        workExperience: (parsed?.workExperience || []).map((job) => ({
+          jobTitle: job?.jobTitle || null,
+          organization: job?.organization || null,
+          location: job?.location || null,
+          dates: {
+            start: job?.dates?.start || null,
+            end: job?.dates?.end || null,
+            isCurrent: job?.dates?.isCurrent || false,
+          },
+          description: job?.description || null,
+        })),
+        education: (parsed?.education || []).map((edu) => ({
+          institution: edu?.organization || null,
+          degree: edu?.accreditation?.education || null,
+          field: edu?.accreditation?.inputStr || null,
+          grade: edu?.grade || null,
+          location: edu?.location || null,
+          dates: {
+            start: edu?.dates?.start || null,
+            end: edu?.dates?.end || null,
+          },
+        })),
+        skills: (parsed?.skills || []).map((skill) => skill?.name || skill),
+        languages: parsed?.languages || [],
+        certifications: (parsed?.certifications || []).map((cert) => ({
+          name: cert?.name || null,
+          issuer: cert?.issuer || null,
+          date: cert?.date || null,
+        })),
+      };
+
+      // Return the successfully parsed data
+      return NextResponse.json({
+        message: "Resume processed successfully",
+        documentId,
+        structuredData,
+        meta: result.meta,
+      });
+    } catch (processError) {
+      console.error("Error processing resume:", processError);
+
+      // Return a more detailed error
       return NextResponse.json(
         {
-          error: "Document uploaded but identifier not found in response",
-          fullResponse: documentResponse,
+          error: "Failed to process resume",
+          message: processError.message,
+          details: processError.toString(),
         },
         { status: 500 }
       );
     }
-
-    console.log("Document created successfully with ID:", documentId);
-
-    // Now get the full document data with the parsed content
-    console.log("Retrieving document data...");
-    const documentData = await client.getDocument(documentId);
-
-    // Extract work experience if available
-    const workExperience = documentData.data?.workExperience || [];
-
-    const response = {
-      documentId: documentId,
-      workHistory: workExperience.map((job) => ({
-        jobTitle: job.jobTitle || "Unknown Title",
-        organization: job.organization || "Unknown Organization",
-        location: job.location || null,
-        dates: job.dates || null,
-        description: job.description || null,
-      })),
-      fullData: documentData, // Include full data for reference
-    };
-
-    return NextResponse.json(response);
   } catch (error) {
     console.error("Server error processing resume:", error);
     return NextResponse.json(
       {
         error: "Failed to process resume",
         message: error.message,
-        stack: error.stack,
       },
       { status: 500 }
     );
