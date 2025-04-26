@@ -1,22 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Voice AI Interview
+
+A Next.js application that creates a voice-based AI interview experience using:
+
+- [Cartesia Sonic-2](https://cartesia.ai) for high-quality text-to-speech
+- [Anthropic Claude 3.7](https://anthropic.com) for conversational reasoning
+- [Deepgram](https://deepgram.com) for speech-to-text
+- [Next.js App Router](https://nextjs.org) for the frontend
+
+## Features
+
+- Real-time voice conversations with an AI interviewer
+- High-quality text-to-speech using Cartesia Sonic-2
+- Accurate speech recognition with Deepgram
+- Intelligent conversation flow powered by Claude 3.7
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ and npm
+
+### Installation
+
+1. Clone the repository
+
+```bash
+git clone <repository-url>
+cd voice-ai-interview
+```
+
+2. Install dependencies
+
+```bash
+npm install
+```
+
+3. Create a `.env.local` file with your API keys
+
+```
+DEEPGRAM_API_KEY=your_deepgram_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+CARTESIA_API_KEY=your_cartesia_api_key
+```
+
+### Running the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to start the voice interview.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
+
+- `/app` - Next.js App Router pages and API routes
+- `/lib` - Utility functions for Cartesia TTS, Deepgram STT, and Claude LLM
+- `/public` - Static assets
+
+## API Routes
+
+- `/api/transcribe` - Converts audio to text using Deepgram
+- `/api/chat` - Gets responses from Claude 3.7
+- `/api/tts` - Generates speech from text using Cartesia Sonic-2
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

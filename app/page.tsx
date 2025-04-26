@@ -106,6 +106,7 @@ export default function Page() {
   };
 
   return (
+<<<<<<< HEAD
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20">
       <main className="flex flex-col gap-[32px] row-start-2 items-center max-w-2xl mx-auto w-full">
         <h1 className="text-3xl font-bold text-center mb-8">Profile Data Extractor</h1>
@@ -200,5 +201,31 @@ export default function Page() {
         </div>
       </main>
     </div>
+=======
+    <main className="flex min-h-screen flex-col items-center justify-center p-24">
+      <div className="z-10 max-w-5xl w-full items-center justify-center font-mono text-sm lg:flex">
+        <h1 className="text-4xl font-bold mb-8 text-center">Voice AI Interview</h1>
+
+        <div className="text-center mt-8">
+          <Link
+            href="/interview"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Start Interview
+          </Link>
+        </div>
+
+        <div className="mt-12">
+          <h2 className="text-2xl font-semibold mb-4">Technologies Used:</h2>
+          <ul className="list-disc pl-6">
+            <li>Cartesia Sonic-2 for high-quality text-to-speech</li>
+            <li>Claude 3.7 for conversational reasoning</li>
+            <li>Deepgram for speech-to-text</li>
+            <li>Next.js App Router for the frontend</li>
+          </ul>
+        </div>
+      </div>
+    </main>
+>>>>>>> 44f501c (Initial interview scaffolding)
   );
 }
