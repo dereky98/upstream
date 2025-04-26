@@ -79,7 +79,7 @@ export default function Home() {
 
           {/* LinkedIn Section */}
           <div className="w-full p-6 bg-white rounded-lg shadow-md mb-8">
-            <h3 className="text-xl font-bold mb-4">LinkedIn Profile Extractor</h3>
+            <h3 className="text-xl font-bold text-black mb-4">LinkedIn Profile Extractor</h3>\
             <form onSubmit={handleLinkedinSubmit} className="w-full">
               <div className="flex flex-col sm:flex-row gap-4 w-full">
                 <input
@@ -87,7 +87,7 @@ export default function Home() {
                   value={linkedinUrl}
                   onChange={(e) => setLinkedinUrl(e.target.value)}
                   placeholder="Enter LinkedIn URL (e.g., https://www.linkedin.com/in/username/)"
-                  className="flex-grow p-3 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-grow text-black p-3 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                   type="submit"
@@ -98,19 +98,16 @@ export default function Home() {
                 </button>
               </div>
             </form>
-
             {linkedinError && (
               <div className="w-full p-4 mt-4 bg-red-100 border border-red-400 text-red-700 rounded">
                 {linkedinError}
               </div>
             )}
-
             {isLinkedinLoading && (
               <div className="flex items-center justify-center w-full mt-4">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
               </div>
             )}
-
             {linkedinSuccess && (
               <div className="w-full p-4 mt-4 bg-green-100 border border-green-400 text-green-700 rounded">
                 Profile data successfully retrieved! Check the browser console.
@@ -120,7 +117,7 @@ export default function Home() {
 
           {/* Resume Section */}
           <div className="w-full p-6 bg-white rounded-lg shadow-md">
-            <h3 className="text-xl font-bold mb-4">Resume Extractor</h3>
+            <h3 className="text-xl text-black font-bold mb-4">Resume Extractor</h3>
             <form onSubmit={handleResumeSubmit} className="w-full">
               <div className="flex flex-col gap-4 w-full">
                 <div className="flex flex-col">
