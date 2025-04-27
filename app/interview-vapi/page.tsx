@@ -646,16 +646,6 @@ export default function InterviewVapiPage() {
           )}
         </div>
 
-        {/* Debug Controls */}
-        <div className="mt-4">
-          <button
-            onClick={addTestMessages}
-            className="w-full rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700"
-          >
-            Add Test Messages (Debug)
-          </button>
-        </div>
-
         {/* Export Transcript Button */}
         {messages.length > 0 && (
           <div className="mt-4 flex flex-col space-y-2">

@@ -124,7 +124,7 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center p-8">
       <div className="w-full max-w-2xl">
-        <h1 className="mb-8 text-center text-4xl font-bold">AI Interview Assistant</h1>
+        <h1 className="mb-8 text-center text-4xl font-bold">AI Expert Interview</h1>
         <section className="rounded-lg bg-white p-6 shadow-md">
           <h2 className="mb-6 text-center text-2xl font-bold text-black">Prepare Your Interview</h2>
           <form onSubmit={handleSubmit} className="space-y-6">

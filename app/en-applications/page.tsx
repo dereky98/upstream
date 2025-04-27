@@ -3,14 +3,31 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+// Types
+interface Network {
+  id: number;
+  name: string;
+  selected: boolean;
+}
+
+interface Result {
+  name: string;
+  status: string;
+  details?: string;
+}
+
+interface Step {
+  action: string;
+}
+
 export default function ExpertNetworkApplicationsPage() {
-  const [networks, setNetworks] = useState([
+  const [networks, setNetworks] = useState<Network[]>([
     { id: 1, name: "GLG", selected: true },
     { id: 2, name: "Tegus", selected: false },
   ]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState<Result[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
@@ -19,14 +36,19 @@ export default function ExpertNetworkApplicationsPage() {
   const [currentLogMessage, setCurrentLogMessage] = useState("");
 
   const [stepIndex, setStepIndex] = useState(0);
-  const [steps, setSteps] = useState([]);
+  const [steps] = useState<Step[]>([]);
 
   // Add a logs array to capture and display console messages
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs] = useState<string[]>([]);
+
+  // Add this function to fix the error:
+  const addLog = (message: string) => {
+    setLogs((prevLogs) => [...prevLogs, message]);
+  };
 
   // Polling effect for log updates
   useEffect(() => {
-    let interval;
+    let interval: NodeJS.Timeout | undefined;
 
     if (isSubmitting && currentNetwork) {
       interval = setInterval(async () => {
@@ -53,7 +75,7 @@ export default function ExpertNetworkApplicationsPage() {
     };
   }, [isSubmitting, currentNetwork]);
 
-  const toggleNetwork = (id) => {
+  const toggleNetwork = (id: number) => {
     setNetworks(
       networks.map((network) =>
         network.id === id ? { ...network, selected: !network.selected } : network
@@ -62,7 +84,7 @@ export default function ExpertNetworkApplicationsPage() {
   };
 
   useEffect(() => {
-    let timer;
+    let timer: NodeJS.Timeout | undefined;
     if (steps.length > 0 && stepIndex < steps.length) {
       setCurrentLogMessage(steps[stepIndex].action);
 
@@ -92,7 +114,7 @@ export default function ExpertNetworkApplicationsPage() {
     setLogs([]); // Clear previous logs
 
     try {
-      const allResults = [];
+      const allResults: Result[] = [];
 
       // Process each selected network
       for (const network of selectedNetworks) {
@@ -148,9 +170,9 @@ export default function ExpertNetworkApplicationsPage() {
             });
             addLog(`No results data from ${network.name}, added default success result`);
           }
-        } catch (err) {
+        } catch (err: unknown) {
           console.error(`Error with ${network.name}:`, err);
-          setCurrentLogMessage(`Error: ${err.message}`);
+          setCurrentLogMessage(`Error: ${err instanceof Error ? err.message : String(err)}`);
 
           allResults.push({
             name: network.name,
@@ -165,10 +187,12 @@ export default function ExpertNetworkApplicationsPage() {
       setCurrentNetwork("Complete");
       setCurrentLogMessage("All applications completed");
       addLog("All applications completed");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error submitting applications:", error);
       setError(error instanceof Error ? error.message : "Failed to submit applications");
-      addLog(`Error submitting applications: ${error.message}`);
+      addLog(
+        `Error submitting applications: ${error instanceof Error ? error.message : String(error)}`
+      );
     } finally {
       setIsSubmitting(false);
     }
