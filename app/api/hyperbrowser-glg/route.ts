@@ -60,19 +60,19 @@ export async function POST(request: Request) {
     addLog("Navigating to GLG website");
 
     // Simulate browser automation with logs
-    addLog("Opening GLG application form");
+    addLog("Opening GLG application form..");
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    addLog("Filling personal information");
+    addLog("Filling personal information..");
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    addLog("Entering professional experience");
+    addLog("Entering professional experience..");
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    addLog("Submitting application");
+    addLog("Submitting application..");
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    addLog("Application submitted successfully");
+    addLog("Application submitted successfully..");
 
     return NextResponse.json({
       success: true,
